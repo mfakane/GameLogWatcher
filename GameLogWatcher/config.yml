@@ -1,0 +1,45 @@
+﻿watchers:
+  # PSO2 チャットログ
+  # foreground: アクティブ時に通知するかどうか (True/False)
+  # background: 非アクティブ時に通知するかどうか (True/False, 既定で True)
+  # channel: チャンネル (Public, Party, Guild, Reply もしくは All の組み合わせ) 例: Party | Reply
+  # keywords: キーワード (リスト) 例: [Foo, Bar]
+  # where: 任意の条件式
+
+  # パーティチャットとウィスパーチャットを通知する
+  - watch: pso2-chatlog
+    enabled: True
+    webhook: https://hooks.slack.com/services/XXXXXXXXX/YYYYYYYYY/ZZZZZZZZZZZZZZZZZZZZZZZZ
+    channel: Party | Reply
+
+  # EVE Online チャットログ
+  # foreground: アクティブ時に通知するかどうか (True/False)
+  # background: 非アクティブ時に通知するかどうか (True/False, 既定で True)
+  # channel: チャンネル (正規表現) 例: Private Chat .+
+  # keywords: キーワード (リスト) 例: [Foo, Bar]
+  # where: 任意の条件式 例: Name == "EVE System"
+  
+  # Private Chat を通知する
+  - watch: eve-chatlog
+    enabled: True
+    webhook: https://hooks.slack.com/services/XXXXXXXXX/YYYYYYYYY/ZZZZZZZZZZZZZZZZZZZZZZZZ
+    channel: Private Chat .+
+  # Local の EVE System を通知する
+  - watch: eve-chatlog
+    enabled: True
+    webhook: https://hooks.slack.com/services/XXXXXXXXX/YYYYYYYYY/ZZZZZZZZZZZZZZZZZZZZZZZZ
+    channel: Local
+    where: Name == "EVE System"
+
+  # EVE Online ゲームログ
+  # foreground: アクティブ時に通知するかどうか (True/False)
+  # background: 非アクティブ時に通知するかどうか (True/False, 既定で True)
+  # kind: メッセージの種類 (None, Notify, Info, Question, Warning, Combat もしくは All の組み合わせ)
+  # keywords: キーワード (リスト) 例: [Foo, Bar]
+  # where: 任意の条件式
+
+  # None と Info 以外を通知する
+  - watch: eve-gamelog
+    enabled: True
+    webhook: https://hooks.slack.com/services/XXXXXXXXX/YYYYYYYYY/ZZZZZZZZZZZZZZZZZZZZZZZZ
+    kind: All & ~(None | Info)
