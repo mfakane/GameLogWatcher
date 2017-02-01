@@ -27,10 +27,10 @@ namespace GameLogWatcher.Eve
 		public EveGameLogWatcher(dynamic config)
 		{
 			WebhookEndPoint = config.webhook;
-			WhenForeground = config.foreground() ? config.foreground : false;
-			WhenBackground = config.background() ? config.background : true;
+			WhenForeground = config.foreground ?? false;
+			WhenBackground = config.background ?? true;
 			Kind = config.kind() ? EnumEx.ParseFlags<EveGameEntryKind>((string)config.kind, true) : EveGameEntryKind.All;
-			Keywords = config.keywords() ? config.keywords : null;
+			Keywords = config.keywords;
 			Where = config.where() ? DynamicExpression.ParseLambda<EveGameEntry, bool>((string)config.where).Compile() : _ => true;
 		}
 

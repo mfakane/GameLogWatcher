@@ -50,7 +50,7 @@ namespace GameLogWatcher
 
 		static Task StartAsync(dynamic[] watchers, IEnumerable<ILogWatcherFactory> factories, CancellationToken cancellationToken) =>
 			Task.WhenAll(watchers
-				.Where(i => i.enabled() ? i.enabled : true)
+				.Where(i => i.enabled ?? true)
 				.Select(i => factories.Aggregate(default(ILogWatcher), (x, y) => x ?? y.CreateWatcher((string)i.watch, i)))
 				.Where(i => i != null)
 				.Select(i => Task.Run(() => i.StartAsync(cancellationToken))));

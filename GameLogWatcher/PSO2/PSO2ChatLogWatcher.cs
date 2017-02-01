@@ -26,10 +26,10 @@ namespace GameLogWatcher.PSO2
 		public PSO2ChatLogWatcher(dynamic config)
 		{
 			WebhookEndPoint = config.webhook;
-			WhenForeground = config.foreground() ? config.foreground : false;
-			WhenBackground = config.background() ? config.background : true;
+			WhenForeground = config.foreground ?? false;
+			WhenBackground = config.background ?? true;
 			Channel = EnumEx.ParseFlags<PSO2ChatChannel>((string)config.channel, true);
-			Keywords = config.keywords() ? config.keywords : null;
+			Keywords = config.keywords;
 			Where = config.where() ? DynamicExpression.ParseLambda<PSO2ChatEntry, bool>((string)config.where).Compile() : _ => true;
 		}
 

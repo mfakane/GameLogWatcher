@@ -31,10 +31,10 @@ namespace GameLogWatcher.Eve
 		public EveChatLogWatcher(dynamic config)
 		{
 			WebhookEndPoint = config.webhook;
-			WhenForeground = config.foreground() ? config.foreground : false;
-			WhenBackground = config.background() ? config.background : true;
+			WhenForeground = config.foreground ?? false;
+			WhenBackground = config.background ?? true;
 			Channel = config.channel() ? new Regex((string)config.channel, RegexOptions.Compiled) : null;
-			Keywords = config.keywords() ? config.keywords : null;
+			Keywords = config.keywords;
 			Where = config.where() ? DynamicExpression.ParseLambda<EveChatEntry, bool>((string)config.where).Compile() : _ => true;
 		}
 
