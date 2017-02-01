@@ -42,19 +42,20 @@ namespace GameLogWatcher.Eve
 		{
 			while (!cancellationToken.IsCancellationRequested)
 			{
-				var startDate = DateTime.UtcNow.Date;
-				var logFiles = GetLogFiles(startDate).ToDictionary(i => i, i => WatchAsync(startDate, i, true, cancellationToken));
+				var date = DateTime.UtcNow.Date;
+				var logFiles = GetLogFiles(date).ToDictionary(i => i, i => WatchAsync(date, i, true, cancellationToken));
 
-				while (!cancellationToken.IsCancellationRequested
-					&& DateTime.UtcNow.Date == startDate)
-				{
-					var newLogFiles = GetLogFiles(startDate).Except(logFiles.Keys);
+				using (var fsw = new FileSystemWatcher(LogDirectory, GetLogPattern(date)))
+					while (!cancellationToken.IsCancellationRequested && DateTime.UtcNow.Date == date)
+					{
+						var change = fsw.WaitForChanged(WatcherChangeTypes.Created, 100);
 
-					foreach (var i in newLogFiles)
-						logFiles[i] = WatchAsync(startDate, i, false, cancellationToken);
+						if (!change.TimedOut && !cancellationToken.IsCancellationRequested)
+							logFiles[change.Name] = WatchAsync(date, change.Name, false, cancellationToken);
+					}
 
-					await Task.Delay(100, cancellationToken);
-				}
+				await Task.WhenAll(logFiles.Values);
+				await Task.Delay(100, cancellationToken);
 			}
 		}
 
@@ -93,8 +94,11 @@ namespace GameLogWatcher.Eve
 				return rt.Any() ? $"https://image.eveonline.com/Character/{rt.First()}_256.jpg" : null;
 			});
 
+		static string GetLogPattern(DateTime date) =>
+			$"*_{date.ToUniversalTime():yyyyMMdd}_*.txt";
+
 		IEnumerable<string> GetLogFiles(DateTime date) =>
-			Directory.EnumerateFiles(LogDirectory, $"*_{date.ToUniversalTime():yyyyMMdd}_*.txt")
+			Directory.EnumerateFiles(LogDirectory, GetLogPattern(date))
 					 .Where(i => Channel?.IsMatch(GetChannelFromPath(i)) ?? true);
 
 		static string GetChannelFromPath(string path) =>

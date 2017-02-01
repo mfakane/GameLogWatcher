@@ -38,27 +38,36 @@ namespace GameLogWatcher.Eve
 		{
 			while (!cancellationToken.IsCancellationRequested)
 			{
-				var startDate = DateTime.UtcNow.Date;
-				var logFiles = GetLogFiles(startDate);
+				var date = DateTime.UtcNow.Date;
+				var logFiles = GetLogFiles(date).ToDictionary(i => i, i => WatchAsync(date, i, true, cancellationToken));
 
-				if (logFiles.Any())
-					await Task.WhenAny(logFiles.Select(async path =>
+				using (var fsw = new FileSystemWatcher(LogDirectory, GetLogPattern(date)))
+					while (!cancellationToken.IsCancellationRequested && DateTime.UtcNow.Date == date)
 					{
-						using (var reader = new LogReader(path, Encoding.UTF8))
-							while (!cancellationToken.IsCancellationRequested
-								&& DateTime.UtcNow.Date == startDate)
-							{
-								if (!(await reader.ReadEntryAsync(cancellationToken) is string entry) ||
-									!(EveGameEntry.Parse(entry) is EveGameEntry gameEntry) ||
-									!IsMatch(gameEntry))
-									continue;
+						var change = fsw.WaitForChanged(WatcherChangeTypes.Created, 100);
 
-								await IncomingWebhooks.PostAsync(WebhookEndPoint, gameEntry.ToMessage());
-							}
-					}));
-				else
-					await Task.Delay(1000, cancellationToken);
+						if (!change.TimedOut && !cancellationToken.IsCancellationRequested)
+							logFiles[change.Name] = WatchAsync(date, change.Name, false, cancellationToken);
+					}
+
+				await Task.WhenAll(logFiles.Values);
+				await Task.Delay(100, cancellationToken);
 			}
+		}
+
+		async Task WatchAsync(DateTime startDate, string path, bool readNewEntryOnly, CancellationToken cancellationToken)
+		{
+			using (var reader = new LogReader(path, Encoding.UTF8, readNewEntryOnly))
+				while (!cancellationToken.IsCancellationRequested
+					&& DateTime.UtcNow.Date == startDate)
+				{
+					if (!(await reader.ReadEntryAsync(cancellationToken) is string entry) ||
+						!(EveGameEntry.Parse(entry) is EveGameEntry gameEntry) ||
+						!IsMatch(gameEntry))
+						continue;
+
+					await IncomingWebhooks.PostAsync(WebhookEndPoint, gameEntry.ToMessage());
+				}
 		}
 
 		bool IsMatch(EveGameEntry entry) =>
@@ -67,7 +76,10 @@ namespace GameLogWatcher.Eve
 			(Keywords?.Any(i => entry.Content.IndexOf(i, StringComparison.OrdinalIgnoreCase) != -1) ?? true) &&
 			Where(entry);
 
+		static string GetLogPattern(DateTime date) =>
+			$"{date.ToUniversalTime():yyyyMMdd}_*.txt";
+
 		static IEnumerable<string> GetLogFiles(DateTime date) =>
-			Directory.EnumerateFiles(LogDirectory, $"{date.ToUniversalTime():yyyyMMdd}_*.txt");
+			Directory.EnumerateFiles(LogDirectory, GetLogPattern(date));
 	}
 }
