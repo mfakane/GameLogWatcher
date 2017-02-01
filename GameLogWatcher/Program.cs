@@ -53,6 +53,6 @@ namespace GameLogWatcher
 				.Where(i => i.enabled() ? i.enabled : true)
 				.Select(i => factories.Aggregate(default(ILogWatcher), (x, y) => x ?? y.CreateWatcher((string)i.watch, i)))
 				.Where(i => i != null)
-				.Select(i => i.StartAsync(cancellationToken)));
+				.Select(i => Task.Run(() => i.StartAsync(cancellationToken))));
 	}
 }
