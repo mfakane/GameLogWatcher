@@ -20,7 +20,10 @@ namespace GameLogWatcher.Eve
 
 		public static EveChatEntry Parse(string channel, string line)
 		{
-			if (!line.StartsWith("[")) return null;
+			if (!line.Contains("[") || !line.Contains("]") || !line.Contains(">")) return null;
+
+            if (!line.StartsWith("["))
+                line = line.Remove(0, line.IndexOf('['));
 
 			var idx = line.IndexOf(']');
 			var idx2 = line.IndexOf('>', idx);
