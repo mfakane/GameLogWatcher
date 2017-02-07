@@ -40,14 +40,11 @@ namespace GameLogWatcher
 
 		async Task<string> ReadEntryCoreAsync()
 		{
-			if (StreamReader == null ||
-				StreamReader.BaseStream.Position == StreamReader.BaseStream.Length)
+			if (StreamReader == null)
 				return null;
 
 			var sb = new StringBuilder();
-			var chars = new StringBuilder();
 			var buf = new char[1];
-			var bom = StreamReader.CurrentEncoding.GetString(StreamReader.CurrentEncoding.GetPreamble());
 
 			while (true)
 			{
@@ -58,23 +55,24 @@ namespace GameLogWatcher
 				var c = buf[0];
 
 				sb.Append(c);
-				chars.Append(c);
 
-				if (!Delimiter.StartsWith(chars.ToString()))
-					chars.Clear();
-				else if (chars.ToString() == Delimiter)
+				if (sb.Length >= Delimiter.Length && Delimiter.Select((i, idx) => sb[sb.Length - (Delimiter.Length - idx)] == i).All(i => i))
 				{
-					sb.Remove(sb.Length - chars.Length, chars.Length);
+					sb.Remove(sb.Length - Delimiter.Length, Delimiter.Length);
 
 					break;
 				}
 			}
 
-			if (bom.Length > 0 && sb.Length > 0 && sb.ToString().Take(bom.Length).SequenceEqual(bom))
-				sb.Remove(0, bom.Length);
-
 			if (sb.Length > 0)
+			{
+				var bom = StreamReader.CurrentEncoding.GetString(StreamReader.CurrentEncoding.GetPreamble());
+
+				if (bom.Length > 0 && sb.Length > 0 && sb.ToString().Take(bom.Length).SequenceEqual(bom))
+					sb.Remove(0, bom.Length);
+
 				return sb.ToString();
+			}
 			else
 				return null;
 		}
